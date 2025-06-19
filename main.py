@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 import telegram
 from telegram.ext import Dispatcher, MessageHandler, Filters, CommandHandler
 import os
@@ -14,8 +14,13 @@ def index():
 
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    from flask import request
     update = telegram.Update.de_json(request.get_json(force=True), bot)
+
+    dp = Dispatcher(bot, None, workers=0)
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.regex("(?i)^not now$"), not_now))
+    dp.add_handler(MessageHandler(Filters.regex("(?i)^yes, tell me more$"), info))
+
     dp.process_update(update)
     return 'ok'
 
@@ -26,12 +31,10 @@ def not_now(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="No worries. Come back whenever you're ready 😊")
 
 def info(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="We help you trade on Binance via API — no custody, no leverage, real results since Sept 2022.")
-
-dp = Dispatcher(bot, None, workers=0)
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(Filters.regex("(?i)^not now$"), not_now))
-dp.add_handler(MessageHandler(Filters.regex("(?i)^yes, tell me more$"), info))
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="We help you trade on Binance via API — no custody, no leverage, real results since Sept 2022."
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
